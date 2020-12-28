@@ -250,7 +250,8 @@ class AI:
         var.save(VAR_SAVE_FILE)
         if os.path.exists(POLICY_MODEL_SAVE_FILE):
             os.rename(POLICY_MODEL_SAVE_FILE, POLICY_MODEL_SAVE_FILE + ".bak")
-            torch.save(policy_net.state_dict(), POLICY_MODEL_SAVE_FILE)
+        torch.save(policy_net.state_dict(), POLICY_MODEL_SAVE_FILE)
+
 
 class TrainingVars:
     def __init__(self):
