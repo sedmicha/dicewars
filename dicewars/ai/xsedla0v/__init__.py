@@ -12,12 +12,12 @@ from collections import namedtuple
 from ..utils import possible_attacks
 from dicewars.client.ai_driver import BattleCommand, EndTurnCommand
 
-
+SAVE_PATH = "/Drive/MyDrive/"
 MEMORY_MAX_CAPACITY = 10000
-MEMORY_SAVE_FILE = "memory.pt"
-POLICY_MODEL_SAVE_FILE = "policy_model.pt"
-TARGET_MODEL_SAVE_FILE = "target_model.pt"
-VAR_SAVE_FILE = "vars.pt"
+MEMORY_SAVE_FILE = SAVE_PATH + "memory.pt"
+POLICY_MODEL_SAVE_FILE = SAVE_PATH + "policy_model.pt"
+TARGET_MODEL_SAVE_FILE = SAVE_PATH + "target_model.pt"
+VAR_SAVE_FILE = SAVE_PATH + "vars.pt"
 NUM_AREAS = 29
 NUM_INPUTS = NUM_AREAS * 2
 NUM_ACTIONS = NUM_AREAS * NUM_AREAS * 2 + 1
