@@ -6,17 +6,17 @@ import signal
 
 from .timers import FischerTimer, FixedTimer
 
-
 class TimeoutError(Exception):
     pass
 
 
 def TimeoutHandler(signum, handler):
+    print("TIMED OUT")
     raise TimeoutError('')
 
 
-TIME_LIMIT_CONSTRUCTOR = 10.0  # in seconds, for AI constructor
-FISCHER_INIT = 10.0  # seconds
+TIME_LIMIT_CONSTRUCTOR = 100000.0  # in seconds, for AI constructor
+FISCHER_INIT = 10000.0  # seconds
 FISCHER_INCREMENT = 0.25  # seconds
 
 
@@ -49,7 +49,8 @@ class AIDriver:
         self.game = game
         self.board = game.board
         self.player_name = game.player_name
-
+        self.ai = None
+        
         signal.signal(signal.SIGALRM, TimeoutHandler)
 
         self.ai_disabled = False
@@ -71,48 +72,54 @@ class AIDriver:
 
         self.timer = FischerTimer(FISCHER_INIT, FISCHER_INCREMENT)
 
+        self.report_events = hasattr(self.ai, 'report_events') and self.ai.report_events == True
+
     def run(self):
         """Main AI agent loop
         """
         game = self.game
 
-        while True:
-            message = game.input_queue.get(block=True, timeout=None)
-            try:
-                if not self.handle_server_message(message):
-                    exit(0)
-            except JSONDecodeError:
-                self.logger.error("Invalid message from server.")
-                exit(1)
-            self.current_player_name = game.current_player.get_name()
-            if self.current_player_name == self.player_name and not self.waitingForResponse:
-                if self.ai_disabled:
-                    self.logger.warning("The AI has already misbehaved, just end-turning.")
-                    self.send_message('end_turn')
-                    continue
-
+        try:
+            while True:
+                message = game.input_queue.get(block=True, timeout=None)
                 try:
-                    board_copy = copy.deepcopy(self.board)
-                    with self.timer as time_left:
-                        command = self.ai.ai_turn(
-                            board_copy,
-                            self.moves_this_turn,
-                            self.turns_finished,
-                            time_left
-                        )
-                    self.process_command(command)
-                except TimeoutError:
-                    self.logger.warning("Forced 'end_turn' because of timeout")
-                    self.send_message('end_turn')
-                    self.time_left_last_time = -1.0
-                except Exception:
-                    self.logger.error("The AI crashed during attempt to make a move:\n", exc_info=True)
-                    self.send_message('end_turn')
-                    self.ai_disabled = True
+                    if not self.handle_server_message(message):
+                        exit(0)
+                except JSONDecodeError:
+                    self.logger.error("Invalid message from server.")
+                    exit(1)
+                self.current_player_name = game.current_player.get_name()
+                if self.current_player_name == self.player_name and not self.waitingForResponse:
+                    if self.ai_disabled:
+                        self.logger.warning("The AI has already misbehaved, just end-turning.")
+                        self.send_message('end_turn')
+                        continue
 
-                if not self.waitingForResponse:
-                    self.logger.warning("Forced 'end_turn' because the implementation did nothing")
-                    self.send_message('end_turn')
+                    try:
+                        board_copy = copy.deepcopy(self.board)
+                        with self.timer as time_left:
+                            command = self.ai.ai_turn(
+                                board_copy,
+                                self.moves_this_turn,
+                                self.turns_finished,
+                                time_left
+                            )
+                        self.process_command(command)
+                    except TimeoutError:
+                        self.logger.warning("Forced 'end_turn' because of timeout")
+                        self.send_message('end_turn')
+                        self.time_left_last_time = -1.0
+                    except Exception:
+                        self.logger.error("The AI crashed during attempt to make a move:\n", exc_info=True)
+                        self.send_message('end_turn')
+                        self.ai_disabled = True
+
+                    if not self.waitingForResponse:
+                        self.logger.warning("Forced 'end_turn' because the implementation did nothing")
+                        self.send_message('end_turn')
+        finally:
+            if hasattr(self.ai, "finalize"):
+                self.ai.finalize()
 
     def handle_server_message(self, msg):
         """Process message from the server
@@ -122,6 +129,9 @@ class AIDriver:
         msg : str
             Message from the server
         """
+
+        result = True
+
         self.logger.debug("Received message type {0}.".format(msg["type"]))
         if msg['type'] == 'battle':
             atk_data = msg['result']['atk']
@@ -141,8 +151,10 @@ class AIDriver:
 
             self.waitingForResponse = False
 
+
         elif msg['type'] == 'end_turn':
             current_player = self.game.players[self.game.current_player_name]
+            ending_player_name = self.game.current_player_name
 
             for area in msg['areas']:
                 owner_name = msg['areas'][area]['owner']
@@ -152,6 +164,9 @@ class AIDriver:
                 area_object.set_owner(owner_name)
                 area_object.set_dice(msg['areas'][area]['dice'])
 
+            ending_player = self.game.current_player_name
+            starting_player = msg['current_player']
+
             current_player.deactivate()
             self.game.current_player_name = msg['current_player']
             self.game.current_player = self.game.players[msg['current_player']]
@@ -159,11 +174,13 @@ class AIDriver:
             self.waitingForResponse = False
 
         elif msg['type'] == 'game_end':
+            if hasattr(self.ai, "game_end"):
+                self.ai.game_end(msg["winner"])
             self.logger.info("Player {} has won".format(msg['winner']))
             self.game.socket.close()
-            return False
+            result = False
 
-        return True
+        return result
 
     def process_command(self, command):
         if isinstance(command, BattleCommand):
@@ -213,8 +230,8 @@ class AIDriver:
         try:
             source_area = self.board.get_area(battle.source_name)
         except KeyError:
-            self.logger.error('Player {} specified area {} -- which is not even a valid area name!'.format(
-                self.player_name, battle.source_name
+            self.logger.error('Player {} specified area {} ({}) -- which is not even a valid area name!'.format(
+                self.player_name, battle.source_name, type(battle.source_name)
             ))
             self.ai_disabled = True
             return False

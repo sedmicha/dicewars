@@ -27,9 +27,10 @@ procs = []
 def signal_handler(signum, frame):
     """Handler for SIGCHLD signal that terminates server and clients
     """
+    return
     for p in procs:
         try:
-            p.kill()
+            p.terminate()
         except ProcessLookupError:
             pass
 
@@ -68,11 +69,11 @@ def main():
             summaries.append(game_summary)
         except KeyboardInterrupt:
             for p in procs:
-                p.kill()
+                p.terminate()
             break
         except AttributeError:
             for p in procs:
-                p.kill()
+                p.terminate()
     if args.report:
         sys.stdout.write('\r')
 

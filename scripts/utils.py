@@ -107,11 +107,18 @@ def run_ai_only_game(
         logs.append(log_file_producer(logdir, 'client-{}.log'.format(ai_version)))
         process_list.append(Popen(client_cmd, stderr=logs[-1]))
 
-    for p in process_list:
+    procs = []
+    procs.append("server")
+    procs.extend(ais)
+    for i, p in enumerate(process_list):
+        #print(f"waiting for {p.pid} {procs[i]} ... ", end="")
         p.wait()
+        #print(f"{p.returncode}")
 
     for log in logs:
         log.close()
+
+    print("all finished")
 
     server_output.seek(0)
     game_summary = GameSummary.from_repr(server_output.read())
