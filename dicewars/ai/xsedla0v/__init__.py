@@ -183,7 +183,7 @@ class AI:
         if use_model:
             #print("using model")
             with torch.no_grad():
-                state = self.get_state(board).flatten().float()
+                state = self.get_state(board).flatten().float().to(device=device)
                 t = policy_net(state)
                 inv_actions_mask = torch.ones(NUM_ACTIONS, device=device, dtype=torch.bool)
                 inv_actions_mask[possible_actions] = 0
