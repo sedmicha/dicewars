@@ -27,11 +27,11 @@ BATCH_SIZE = 256
 GAMMA = 0.999
 EPS_START = 0.9
 EPS_END = 0.05
-EPS_DECAY = 1000
+EPS_DECAY = 10000
 LEARNING_RATE = 0.001
 TARGET_UPDATE = 10
-WIN_REWARD = 100
-LOSE_REWARD = -100
+WIN_REWARD = 20
+LOSE_REWARD = -20
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
