@@ -12,7 +12,7 @@ from collections import namedtuple
 from ..utils import possible_attacks
 from dicewars.client.ai_driver import BattleCommand, EndTurnCommand
 
-SAVE_PATH = "/Drive/MyDrive/"
+SAVE_PATH = os.env["SAVE_PATH"] is "SAVE_PATH" in os.env else "./"
 MEMORY_MAX_CAPACITY = 10000
 MEMORY_SAVE_FILE = SAVE_PATH + "memory.pt"
 POLICY_MODEL_SAVE_FILE = SAVE_PATH + "policy_model.pt"
