@@ -245,8 +245,9 @@ class AI:
         reward = WIN_REWARD if self.player_name == winner_name else LOSE_REWARD
         self.total_reward += reward
         self.push_transition(self.state, self.action, None, reward)
+        avg_loss = 0 if n_losses == 0 else total_loss / n_losses
         print(f"Episode {var.episode_num} ({var.steps_done} steps): {win_lose} in {self.n_moves} "
-              f"(episode reward: {self.total_reward}, avg training loss {total_loss / n_losses})")
+              f"(episode reward: {self.total_reward}, avg training loss {avg_loss})")
     
     def finalize(self):
         #print("Saving!")
