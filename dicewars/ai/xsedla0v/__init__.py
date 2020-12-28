@@ -27,7 +27,8 @@ BATCH_SIZE = 256
 GAMMA = 0.999
 EPS_START = 0.9
 EPS_END = 0.05
-EPS_DECAY = 500
+EPS_DECAY = 1000
+LEARNING_RATE = 0.001
 TARGET_UPDATE = 10
 WIN_REWARD = 100
 LOSE_REWARD = -100
@@ -274,7 +275,7 @@ if os.path.exists(POLICY_MODEL_SAVE_FILE):
 target_net = QNet().to(device=device)
 if os.path.exists(TARGET_MODEL_SAVE_FILE):
     target_net.load_state_dict(torch.load(TARGET_MODEL_SAVE_FILE))
-optimizer = optim.RMSprop(policy_net.parameters())
+optimizer = optim.RMSprop(policy_net.parameters(), lr=LEARNING_RATE)
 var = TrainingVars()
 if os.path.exists(VAR_SAVE_FILE):
     var = TrainingVars.load(VAR_SAVE_FILE)
