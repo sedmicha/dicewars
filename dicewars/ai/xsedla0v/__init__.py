@@ -268,10 +268,10 @@ class TrainingVars:
 memory = ReplayMemory(MEMORY_MAX_CAPACITY)
 if os.path.exists(MEMORY_SAVE_FILE):
     memory.load(MEMORY_SAVE_FILE)
-policy_net = QNet()
+policy_net = QNet().to(device=device)
 if os.path.exists(POLICY_MODEL_SAVE_FILE):
     policy_net.load_state_dict(torch.load(POLICY_MODEL_SAVE_FILE))
-target_net = QNet()
+target_net = QNet().to(device=device)
 if os.path.exists(TARGET_MODEL_SAVE_FILE):
     target_net.load_state_dict(torch.load(TARGET_MODEL_SAVE_FILE))
 optimizer = optim.RMSprop(policy_net.parameters())
