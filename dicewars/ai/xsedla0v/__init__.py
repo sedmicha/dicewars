@@ -108,10 +108,11 @@ class QNet(nn.Module):
         x = F.relu(self.output_layer(x))
         return x
 
-loss = None
+total_loss = 0
+n_losses = 0
 
 def optimize_model():
-    global loss
+    global total_loss, n_losses
     if len(memory) < BATCH_SIZE:
         return
     transitions = memory.sample(BATCH_SIZE)
@@ -138,6 +139,8 @@ def optimize_model():
     expected_state_action_values = (next_state_values * GAMMA) + reward_batch
 
     loss = F.smooth_l1_loss(state_action_values, expected_state_action_values.unsqueeze(1))
+    total_loss += loss
+    n_losses += 1
     #print("LOSS", loss)
 
     optimizer.zero_grad()
@@ -156,6 +159,7 @@ class AI:
         self.end_turn_queued = False
         self.players = players_order
         self.n_moves = 0
+        self.total_reward = 0
     
     def get_state(self, board):
         return torch.tensor([
@@ -223,6 +227,7 @@ class AI:
         next_state = self.get_state(board)
         if self.state is not None and not self.end_turn_queued:
             reward = calc_state_value(next_state) - calc_state_value(self.state)
+            self.total_reward += reward
             self.push_transition(self.state, self.action, next_state, reward)
         self.state = next_state
 
@@ -237,9 +242,11 @@ class AI:
 
     def game_end(self, winner_name):
         win_lose = "WIN" if self.player_name == winner_name else "LOSE"
-        print(f"Episode {var.episode_num} ({var.steps_done} steps): {win_lose} in {self.n_moves} (last training loss {loss})")
         reward = WIN_REWARD if self.player_name == winner_name else LOSE_REWARD
+        self.total_reward += reward
         self.push_transition(self.state, self.action, None, reward)
+        print(f"Episode {var.episode_num} ({var.steps_done} steps): {win_lose} in {self.n_moves} "
+              f"(episode reward: {self.total_reward}, avg training loss {total_loss / n_losses})")
     
     def finalize(self):
         #print("Saving!")
